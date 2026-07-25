@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { Dices, X } from 'lucide-react'
+import { Dices, Download, LoaderCircle, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { downloadBlob, exportFileName, renderToBlob } from '@/lib/export'
 import {
   GRAIN_TEXTURE_URL,
   vignetteBackground,
@@ -28,6 +29,21 @@ export function Preview({
 }: PreviewProps) {
   const imgRef = useRef<HTMLImageElement>(null)
   const [imgWidth, setImgWidth] = useState(0)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState(false)
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    setSaveError(false)
+    try {
+      const blob = await renderToBlob(image, filter, subtitle)
+      downloadBlob(blob, exportFileName(image.fileName))
+    } catch {
+      setSaveError(true)
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   // 表示中の画像幅に追従して字幕サイズを決める（1 行に収めるため）
   useEffect(() => {
@@ -89,7 +105,7 @@ export function Preview({
         <p className="truncate text-xs text-muted-foreground">
           {image.fileName}（{image.width}×{image.height}）
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="secondary" size="sm" onClick={onShuffleSubtitle}>
             <Dices aria-hidden="true" />
             字幕を変える
@@ -98,8 +114,21 @@ export function Preview({
             <X aria-hidden="true" />
             取消し
           </Button>
+          <Button size="sm" onClick={() => void handleSave()} disabled={isSaving}>
+            {isSaving ? (
+              <LoaderCircle className="animate-spin" aria-hidden="true" />
+            ) : (
+              <Download aria-hidden="true" />
+            )}
+            保存する
+          </Button>
         </div>
       </div>
+      {saveError && (
+        <p role="alert" className="text-sm text-destructive">
+          画像の保存に失敗しました。もう一度お試しください。
+        </p>
+      )}
     </motion.div>
   )
 }
