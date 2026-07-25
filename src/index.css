@@ -128,3 +128,7 @@
     @apply font-sans;
     }
 }
+/* 映画字幕用フォント（Google Fonts: Zen Old Mincho） */
+@utility font-cinema {
+  font-family: 'Zen Old Mincho', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+}

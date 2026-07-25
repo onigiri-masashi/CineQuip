@@ -6,22 +6,26 @@ import { ImageDropzone } from '@/components/ImageDropzone'
 import { Preview } from '@/components/Preview'
 import { DEFAULT_FILTER, getFilter } from '@/lib/filters'
 import { releaseImage, type LoadedImage } from '@/lib/image'
+import { pickRandomSubtitle } from '@/lib/subtitles'
 
 function App() {
   const [image, setImage] = useState<LoadedImage | null>(null)
   const [filterId, setFilterId] = useState(DEFAULT_FILTER.id)
+  const [subtitle, setSubtitle] = useState('')
 
   const handleSelect = (next: LoadedImage) => {
     if (image) releaseImage(image)
     setImage(next)
-    // 画像を入れ替えたらフィルターも初期状態に戻す
+    // 画像を入れ替えたらフィルターを初期化し、字幕を自動で抽選する
     setFilterId(DEFAULT_FILTER.id)
+    setSubtitle(pickRandomSubtitle())
   }
 
   const handleClear = () => {
     if (image) releaseImage(image)
     setImage(null)
     setFilterId(DEFAULT_FILTER.id)
+    setSubtitle('')
   }
 
   return (
@@ -44,6 +48,8 @@ function App() {
             <Preview
               image={image}
               filter={getFilter(filterId)}
+              subtitle={subtitle}
+              onShuffleSubtitle={() => setSubtitle(pickRandomSubtitle(subtitle))}
               onClear={handleClear}
             />
             <FilterSelector
