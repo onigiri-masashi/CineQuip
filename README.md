@@ -29,7 +29,17 @@ npm run build    # 型チェック + プロダクションビルド
 
 ## 字幕の管理
 
-字幕の候補は `src/data/subtitles.json` で管理します（字幕機能の実装後に追加されます）。配列に文字列を追加・削除するだけで反映されます。
+字幕の候補は `src/data/subtitles.json` で管理します。配列に文字列を追加・削除するだけで反映されます。
+
+## デプロイ
+
+Cloudflare Workers（Static Assets）に配信します。サーバー処理はないため無料枠の範囲で運用できます。
+
+- main ブランチへの push で GitHub Actions（`.github/workflows/deploy.yml`）が自動デプロイします
+- リポジトリシークレットに以下の設定が必要です（未設定の間はデプロイをスキップします）
+  - `CLOUDFLARE_API_TOKEN`: 「Cloudflare Workers を編集する」テンプレートで作成した API トークン
+  - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare ダッシュボードに表示されるアカウント ID
+- 手元からは `npm run deploy` でもデプロイできます（`wrangler login` が必要）
 
 ## ライセンス
 
