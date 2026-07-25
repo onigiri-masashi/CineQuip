@@ -1,21 +1,27 @@
 import { useState } from 'react'
 import { Clapperboard } from 'lucide-react'
 
+import { FilterSelector } from '@/components/FilterSelector'
 import { ImageDropzone } from '@/components/ImageDropzone'
 import { Preview } from '@/components/Preview'
+import { DEFAULT_FILTER, getFilter } from '@/lib/filters'
 import { releaseImage, type LoadedImage } from '@/lib/image'
 
 function App() {
   const [image, setImage] = useState<LoadedImage | null>(null)
+  const [filterId, setFilterId] = useState(DEFAULT_FILTER.id)
 
   const handleSelect = (next: LoadedImage) => {
     if (image) releaseImage(image)
     setImage(next)
+    // 画像を入れ替えたらフィルターも初期状態に戻す
+    setFilterId(DEFAULT_FILTER.id)
   }
 
   const handleClear = () => {
     if (image) releaseImage(image)
     setImage(null)
+    setFilterId(DEFAULT_FILTER.id)
   }
 
   return (
@@ -34,7 +40,18 @@ function App() {
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
         {image ? (
-          <Preview image={image} onClear={handleClear} />
+          <div className="flex flex-col gap-6">
+            <Preview
+              image={image}
+              filter={getFilter(filterId)}
+              onClear={handleClear}
+            />
+            <FilterSelector
+              image={image}
+              selectedId={filterId}
+              onSelect={setFilterId}
+            />
+          </div>
         ) : (
           <ImageDropzone onSelect={handleSelect} />
         )}
