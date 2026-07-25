@@ -1,8 +1,23 @@
+import { useState } from 'react'
 import { Clapperboard } from 'lucide-react'
 
-import { Card, CardContent } from '@/components/ui/card'
+import { ImageDropzone } from '@/components/ImageDropzone'
+import { Preview } from '@/components/Preview'
+import { releaseImage, type LoadedImage } from '@/lib/image'
 
 function App() {
+  const [image, setImage] = useState<LoadedImage | null>(null)
+
+  const handleSelect = (next: LoadedImage) => {
+    if (image) releaseImage(image)
+    setImage(next)
+  }
+
+  const handleClear = () => {
+    if (image) releaseImage(image)
+    setImage(null)
+  }
+
   return (
     <div className="flex min-h-svh flex-col bg-background text-foreground">
       <header className="border-b border-border">
@@ -18,11 +33,11 @@ function App() {
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
-        <Card>
-          <CardContent className="flex min-h-64 items-center justify-center text-muted-foreground">
-            ここに画像入力エリアが入ります（実装予定）
-          </CardContent>
-        </Card>
+        {image ? (
+          <Preview image={image} onClear={handleClear} />
+        ) : (
+          <ImageDropzone onSelect={handleSelect} />
+        )}
       </main>
 
       <footer className="border-t border-border">
