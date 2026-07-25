@@ -1,5 +1,6 @@
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { X } from 'lucide-react'
+import { Dices, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -12,19 +13,42 @@ import type { LoadedImage } from '@/lib/image'
 interface PreviewProps {
   image: LoadedImage
   filter: CinemaFilter
+  subtitle: string
+  onShuffleSubtitle: () => void
   onClear: () => void
 }
 
-/** 選択された画像にフィルターを適用したプレビュー表示と取消ボタン */
-export function Preview({ image, filter, onClear }: PreviewProps) {
+/** 選択された画像にフィルターと字幕を重ねたプレビュー表示 */
+export function Preview({
+  image,
+  filter,
+  subtitle,
+  onShuffleSubtitle,
+  onClear,
+}: PreviewProps) {
+  const imgRef = useRef<HTMLImageElement>(null)
+  const [imgWidth, setImgWidth] = useState(0)
+
+  // 表示中の画像幅に追従して字幕サイズを決める（1 行に収めるため）
+  useEffect(() => {
+    const el = imgRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => setImgWidth(el.clientWidth))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  const subtitleFontSize = Math.min(40, Math.max(10, imgWidth * 0.042))
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       className="flex flex-col gap-4"
     >
-      <div className="relative mx-auto overflow-hidden rounded-xl bg-black">
+      <div className="relative mx-auto w-fit overflow-hidden rounded-xl bg-black">
         <img
+          ref={imgRef}
           src={image.url}
           alt={image.fileName}
           className="mx-auto max-h-[70svh] w-auto max-w-full"
@@ -47,15 +71,34 @@ export function Preview({ image, filter, onClear }: PreviewProps) {
             style={{ background: vignetteBackground(filter.vignette) }}
           />
         )}
+        {subtitle && imgWidth > 0 && (
+          <p
+            className="font-cinema pointer-events-none absolute inset-x-0 bottom-[4%] overflow-hidden text-center font-bold whitespace-nowrap text-white"
+            style={{
+              fontSize: subtitleFontSize,
+              letterSpacing: '0.08em',
+              textShadow:
+                '0 0 6px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,1)',
+            }}
+          >
+            {subtitle}
+          </p>
+        )}
       </div>
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="truncate text-xs text-muted-foreground">
           {image.fileName}（{image.width}×{image.height}）
         </p>
-        <Button variant="outline" size="sm" onClick={onClear}>
-          <X aria-hidden="true" />
-          取消し
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={onShuffleSubtitle}>
+            <Dices aria-hidden="true" />
+            字幕を変える
+          </Button>
+          <Button variant="outline" size="sm" onClick={onClear}>
+            <X aria-hidden="true" />
+            取消し
+          </Button>
+        </div>
       </div>
     </motion.div>
   )
