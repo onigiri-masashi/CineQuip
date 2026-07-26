@@ -1,9 +1,15 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Clapperboard } from 'lucide-react'
 
+import { AdjustmentPanel } from '@/components/AdjustmentPanel'
 import { FilterSelector } from '@/components/FilterSelector'
 import { ImageDropzone } from '@/components/ImageDropzone'
 import { Preview } from '@/components/Preview'
+import {
+  applyAdjustments,
+  defaultAdjustments,
+  type Adjustments,
+} from '@/lib/adjustments'
 import { DEFAULT_FILTER, getFilter } from '@/lib/filters'
 import { releaseImage, type LoadedImage } from '@/lib/image'
 import { pickRandomSubtitle } from '@/lib/subtitles'
@@ -12,19 +18,34 @@ function App() {
   const [image, setImage] = useState<LoadedImage | null>(null)
   const [filterId, setFilterId] = useState(DEFAULT_FILTER.id)
   const [subtitle, setSubtitle] = useState('')
+  const [adjustments, setAdjustments] = useState<Adjustments>(() =>
+    defaultAdjustments(DEFAULT_FILTER),
+  )
+
+  // テンプレート + 手動調整を合成した実効フィルター
+  const effectiveFilter = useMemo(
+    () => applyAdjustments(getFilter(filterId), adjustments),
+    [filterId, adjustments],
+  )
+
+  const selectFilter = (id: string) => {
+    setFilterId(id)
+    // テンプレートを切り替えたら、そのテンプレートを基準に調整をやり直す
+    setAdjustments(defaultAdjustments(getFilter(id)))
+  }
 
   const handleSelect = (next: LoadedImage) => {
     if (image) releaseImage(image)
     setImage(next)
     // 画像を入れ替えたらフィルターを初期化し、字幕を自動で抽選する
-    setFilterId(DEFAULT_FILTER.id)
+    selectFilter(DEFAULT_FILTER.id)
     setSubtitle(pickRandomSubtitle())
   }
 
   const handleClear = () => {
     if (image) releaseImage(image)
     setImage(null)
-    setFilterId(DEFAULT_FILTER.id)
+    selectFilter(DEFAULT_FILTER.id)
     setSubtitle('')
   }
 
@@ -47,7 +68,7 @@ function App() {
           <div className="flex flex-col gap-6">
             <Preview
               image={image}
-              filter={getFilter(filterId)}
+              filter={effectiveFilter}
               subtitle={subtitle}
               onShuffleSubtitle={() => setSubtitle(pickRandomSubtitle(subtitle))}
               onClear={handleClear}
@@ -55,7 +76,14 @@ function App() {
             <FilterSelector
               image={image}
               selectedId={filterId}
-              onSelect={setFilterId}
+              onSelect={selectFilter}
+            />
+            <AdjustmentPanel
+              adjustments={adjustments}
+              onChange={setAdjustments}
+              onReset={() =>
+                setAdjustments(defaultAdjustments(getFilter(filterId)))
+              }
             />
           </div>
         ) : (
