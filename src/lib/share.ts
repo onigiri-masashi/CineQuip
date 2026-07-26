@@ -3,19 +3,24 @@ import { downloadBlob } from '@/lib/export'
 /** X へのシェア時に付与するハッシュタグ（# は含めない） */
 const SHARE_HASHTAG = 'CineQuip'
 
+/** ハッシュタグ付きの X 投稿作成画面 URL（フォールバック導線用） */
+export const POST_INTENT_URL = `https://x.com/intent/post?hashtags=${SHARE_HASHTAG}`
+
 /**
  * シェア処理の結果。
  * - shared: 共有シート経由で共有を完了した
  * - canceled: ユーザーが共有シートをキャンセルした
- * - intent: 画像を保存して X の投稿画面を開いた（画像添付はユーザー操作）
+ * - fallback: 画像を保存した（X の投稿画面への誘導は呼び出し側が行う）
  */
-export type ShareResult = 'shared' | 'canceled' | 'intent'
+export type ShareResult = 'shared' | 'canceled' | 'fallback'
 
 /**
  * 生成画像を X へシェアする。
  * Web Share API で画像ファイル付き共有ができる環境（主にモバイル）では
- * 共有シートを開き、使えない環境では画像をダウンロードした上で
- * ハッシュタグ付きの X 投稿画面を開くフォールバックに切り替える。
+ * 共有シートを開く。使えない環境では画像をダウンロードし 'fallback' を
+ * 返すので、呼び出し側で POST_INTENT_URL へのリンクを提示する。
+ * 画像生成の非同期処理を挟むとユーザー操作コンテキストが失われ
+ * window.open はポップアップブロックされるため、ここでは開かない。
  */
 export async function shareToX(
   blob: Blob,
@@ -32,18 +37,10 @@ export async function shareToX(
       if (error instanceof DOMException && error.name === 'AbortError') {
         return 'canceled'
       }
-      // 共有シートが開けなかった場合は intent フォールバックへ進む
+      // 共有シートが開けなかった場合はフォールバックへ進む
     }
   }
 
   downloadBlob(blob, fileName)
-  openPostIntent()
-  return 'intent'
-}
-
-/** ハッシュタグ付きで X の投稿作成画面を新しいタブで開く */
-function openPostIntent() {
-  const url = new URL('https://x.com/intent/post')
-  url.searchParams.set('hashtags', SHARE_HASHTAG)
-  window.open(url.toString(), '_blank', 'noopener,noreferrer')
+  return 'fallback'
 }

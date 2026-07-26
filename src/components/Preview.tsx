@@ -5,7 +5,7 @@ import { Dices, Download, LoaderCircle, Share2, X } from 'lucide-react'
 import { CanvasView } from '@/components/CanvasView'
 import { Button } from '@/components/ui/button'
 import { downloadBlob, exportFileName, renderToBlob } from '@/lib/export'
-import { shareToX } from '@/lib/share'
+import { POST_INTENT_URL, shareToX } from '@/lib/share'
 import type { CinemaFilter } from '@/lib/filters'
 import type { LoadedImage } from '@/lib/image'
 
@@ -34,7 +34,7 @@ export function Preview({
   const [saveError, setSaveError] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
   const [shareError, setShareError] = useState(false)
-  const [showIntentGuide, setShowIntentGuide] = useState(false)
+  const [showFallbackGuide, setShowFallbackGuide] = useState(false)
 
   // 表示中のプレビュー幅に追従して字幕サイズを決める（1 行に収めるため）
   useEffect(() => {
@@ -63,12 +63,12 @@ export function Preview({
   const handleShare = async () => {
     setIsSharing(true)
     setShareError(false)
-    setShowIntentGuide(false)
+    setShowFallbackGuide(false)
     try {
       const blob = await renderToBlob(image, filter, subtitle)
       const result = await shareToX(blob, exportFileName(image.fileName))
-      // フォールバック時は画像の添付操作をユーザーに促す
-      if (result === 'intent') setShowIntentGuide(true)
+      // フォールバック時は投稿画面へのリンクと画像の添付操作を案内する
+      if (result === 'fallback') setShowFallbackGuide(true)
     } catch {
       setShareError(true)
     } finally {
@@ -151,9 +151,18 @@ export function Preview({
           シェアに失敗しました。もう一度お試しください。
         </p>
       )}
-      {showIntentGuide && (
+      {showFallbackGuide && (
         <p role="status" className="text-sm text-muted-foreground">
-          画像を保存し、Xの投稿画面を開きました。投稿に保存した画像を添付してください。
+          画像を保存しました。
+          <a
+            href={POST_INTENT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-foreground"
+          >
+            Xの投稿画面を開き
+          </a>
+          、保存した画像を添付してください。
         </p>
       )}
     </motion.div>
