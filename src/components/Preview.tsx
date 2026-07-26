@@ -6,6 +6,7 @@ import { CanvasView } from '@/components/CanvasView'
 import { Button } from '@/components/ui/button'
 import { downloadBlob, exportFileName, renderToBlob } from '@/lib/export'
 import { POST_INTENT_URL, shareToX } from '@/lib/share'
+import { fitSubtitleFontSize } from '@/lib/subtitle-layout'
 import type { CinemaFilter } from '@/lib/filters'
 import type { LoadedImage } from '@/lib/image'
 
@@ -45,7 +46,10 @@ export function Preview({
     return () => observer.disconnect()
   }, [])
 
-  const subtitleFontSize = Math.min(40, Math.max(10, viewWidth * 0.042))
+  const subtitleFontSize = Math.min(
+    40,
+    Math.max(10, fitSubtitleFontSize(viewWidth, subtitle)),
+  )
 
   const handleSave = async () => {
     setIsSaving(true)
