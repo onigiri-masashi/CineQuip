@@ -193,11 +193,11 @@ export const FILTERS: CinemaFilter[] = [
     id: 'retro-poster',
     name: 'レトロポスター',
     ops: [
-      { type: 'saturate', value: 1.5 },
+      { type: 'saturate', value: 1.75 },
       { type: 'contrast', value: 1.2 },
       { type: 'brightness', value: 1.03 },
     ],
-    tone: { posterize: 5 },
+    tone: { posterize: 4 },
     vignette: 0.12,
     grain: 0.08,
   }),
