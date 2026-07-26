@@ -6,7 +6,7 @@ import { CanvasView } from '@/components/CanvasView'
 import { Button } from '@/components/ui/button'
 import { downloadBlob, exportFileName, renderToBlob } from '@/lib/export'
 import { buildPostIntentUrl, copyImageToClipboard } from '@/lib/share'
-import { fitSubtitleFontSize } from '@/lib/subtitle-layout'
+import { layoutSubtitle, SUBTITLE_LINE_HEIGHT } from '@/lib/subtitle-layout'
 import type { CinemaFilter } from '@/lib/filters'
 import type { LoadedImage } from '@/lib/image'
 
@@ -38,7 +38,7 @@ export function Preview({
     'idle' | 'copied' | 'downloaded' | 'error'
   >('idle')
 
-  // 表示中のプレビュー幅に追従して字幕サイズを決める（1 行に収めるため）
+  // 表示中のプレビュー幅に追従して字幕の行分割とサイズを決める
   useEffect(() => {
     const el = canvasRef.current
     if (!el) return
@@ -47,10 +47,8 @@ export function Preview({
     return () => observer.disconnect()
   }, [])
 
-  const subtitleFontSize = Math.min(
-    40,
-    Math.max(10, fitSubtitleFontSize(viewWidth, subtitle)),
-  )
+  const subtitleLayout = layoutSubtitle(viewWidth, subtitle)
+  const subtitleFontSize = Math.min(40, Math.max(10, subtitleLayout.fontSize))
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -116,15 +114,20 @@ export function Preview({
         />
         {subtitle && viewWidth > 0 && (
           <p
-            className="font-cinema pointer-events-none absolute inset-x-0 bottom-[4%] overflow-hidden text-center font-bold whitespace-nowrap text-white"
+            className="font-cinema pointer-events-none absolute inset-x-0 bottom-[4%] overflow-hidden text-center font-bold text-white"
             style={{
               fontSize: subtitleFontSize,
+              lineHeight: SUBTITLE_LINE_HEIGHT,
               letterSpacing: '0.08em',
               textShadow:
                 '0 0 6px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,1)',
             }}
           >
-            {subtitle}
+            {subtitleLayout.lines.map((line) => (
+              <span key={line} className="block whitespace-nowrap">
+                {line}
+              </span>
+            ))}
           </p>
         )}
       </div>
