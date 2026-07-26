@@ -35,6 +35,7 @@ export function Preview({
   const [isSharing, setIsSharing] = useState(false)
   const [shareError, setShareError] = useState(false)
   const [showFallbackGuide, setShowFallbackGuide] = useState(false)
+  const [showHashtagGuide, setShowHashtagGuide] = useState(false)
 
   // 表示中のプレビュー幅に追従して字幕サイズを決める（1 行に収めるため）
   useEffect(() => {
@@ -64,11 +65,14 @@ export function Preview({
     setIsSharing(true)
     setShareError(false)
     setShowFallbackGuide(false)
+    setShowHashtagGuide(false)
     try {
       const blob = await renderToBlob(image, filter, subtitle)
       const result = await shareToX(blob, exportFileName(image.fileName))
       // フォールバック時は投稿画面へのリンクと画像の添付操作を案内する
       if (result === 'fallback') setShowFallbackGuide(true)
+      // ハッシュタグを自動付与できなかった場合は手動での追加を促す
+      if (result === 'shared-untagged') setShowHashtagGuide(true)
     } catch {
       setShareError(true)
     } finally {
@@ -163,6 +167,11 @@ export function Preview({
             Xの投稿画面を開き
           </a>
           、保存した画像を添付してください。
+        </p>
+      )}
+      {showHashtagGuide && (
+        <p role="status" className="text-sm text-muted-foreground">
+          投稿には #CineQuip のハッシュタグを添えてください。
         </p>
       )}
     </motion.div>

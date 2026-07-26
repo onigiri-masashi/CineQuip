@@ -9,10 +9,22 @@ export const POST_INTENT_URL = `https://x.com/intent/post?hashtags=${SHARE_HASHT
 /**
  * シェア処理の結果。
  * - shared: 共有シート経由で共有を完了した
+ * - shared-untagged: ハッシュタグなしで共有した（付与はユーザーに案内する）
  * - canceled: ユーザーが共有シートをキャンセルした
  * - fallback: 画像を保存した（X の投稿画面への誘導は呼び出し側が行う）
  */
-export type ShareResult = 'shared' | 'canceled' | 'fallback'
+export type ShareResult = 'shared' | 'shared-untagged' | 'canceled' | 'fallback'
+
+/**
+ * iOS（iPadOS 含む）かどうかを判定する。
+ * iPadOS の Safari はデスクトップ Mac を名乗るため、タッチ点数で見分ける。
+ */
+function isIOS(): boolean {
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1)
+  )
+}
 
 /**
  * 生成画像を X へシェアする。
@@ -27,12 +39,17 @@ export async function shareToX(
   fileName: string,
 ): Promise<ShareResult> {
   const file = new File([blob], fileName, { type: 'image/png' })
-  const shareData: ShareData = { files: [file], text: `#${SHARE_HASHTAG}` }
+  // iOS の共有シートは files と text を同時に渡すと X などの共有先アプリが
+  // テキスト共有として解釈し画像を落とすため、iOS では画像のみを渡す
+  const withText = !isIOS()
+  const shareData: ShareData = withText
+    ? { files: [file], text: `#${SHARE_HASHTAG}` }
+    : { files: [file] }
 
   if (typeof navigator.canShare === 'function' && navigator.canShare(shareData)) {
     try {
       await navigator.share(shareData)
-      return 'shared'
+      return withText ? 'shared' : 'shared-untagged'
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         return 'canceled'
