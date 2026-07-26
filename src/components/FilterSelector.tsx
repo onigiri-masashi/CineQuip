@@ -1,8 +1,12 @@
 import { motion } from 'motion/react'
 
+import { CanvasView } from '@/components/CanvasView'
 import { cn } from '@/lib/utils'
 import { FILTERS } from '@/lib/filters'
 import type { LoadedImage } from '@/lib/image'
+
+/** サムネイルの描画解像度（表示は最大80pxなので高DPI向けに2倍） */
+const THUMBNAIL_MAX_DIM = 160
 
 interface FilterSelectorProps {
   image: LoadedImage
@@ -40,12 +44,11 @@ export function FilterSelector({
                 selected && 'border-primary ring-2 ring-primary/40',
               )}
             >
-              <img
-                src={image.url}
-                alt=""
-                aria-hidden="true"
+              <CanvasView
+                image={image}
+                filter={filter}
+                maxDim={THUMBNAIL_MAX_DIM}
                 className="size-full object-cover"
-                style={{ filter: filter.cssFilter || undefined }}
               />
             </span>
             <span

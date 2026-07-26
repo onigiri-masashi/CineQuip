@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { Dices, Download, LoaderCircle, X } from 'lucide-react'
 
+import { CanvasView } from '@/components/CanvasView'
 import { Button } from '@/components/ui/button'
 import { downloadBlob, exportFileName, renderToBlob } from '@/lib/export'
-import {
-  GRAIN_TEXTURE_URL,
-  vignetteBackground,
-  type CinemaFilter,
-} from '@/lib/filters'
+import type { CinemaFilter } from '@/lib/filters'
 import type { LoadedImage } from '@/lib/image'
+
+/** プレビューの描画解像度の長辺上限（速度と画質のバランス） */
+const PREVIEW_MAX_DIM = 1440
 
 interface PreviewProps {
   image: LoadedImage
@@ -27,10 +27,21 @@ export function Preview({
   onShuffleSubtitle,
   onClear,
 }: PreviewProps) {
-  const imgRef = useRef<HTMLImageElement>(null)
-  const [imgWidth, setImgWidth] = useState(0)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [viewWidth, setViewWidth] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState(false)
+
+  // 表示中のプレビュー幅に追従して字幕サイズを決める（1 行に収めるため）
+  useEffect(() => {
+    const el = canvasRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => setViewWidth(el.clientWidth))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  const subtitleFontSize = Math.min(40, Math.max(10, viewWidth * 0.042))
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -45,17 +56,6 @@ export function Preview({
     }
   }
 
-  // 表示中の画像幅に追従して字幕サイズを決める（1 行に収めるため）
-  useEffect(() => {
-    const el = imgRef.current
-    if (!el) return
-    const observer = new ResizeObserver(() => setImgWidth(el.clientWidth))
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
-  const subtitleFontSize = Math.min(40, Math.max(10, imgWidth * 0.042))
-
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
@@ -63,31 +63,15 @@ export function Preview({
       className="flex flex-col gap-4"
     >
       <div className="relative mx-auto w-fit overflow-hidden rounded-xl bg-black">
-        <img
-          ref={imgRef}
-          src={image.url}
-          alt={image.fileName}
-          className="mx-auto max-h-[70svh] w-auto max-w-full"
-          style={{ filter: filter.cssFilter || undefined }}
+        <CanvasView
+          ref={canvasRef}
+          image={image}
+          filter={filter}
+          maxDim={PREVIEW_MAX_DIM}
+          label={image.fileName}
+          className="mx-auto block max-h-[70svh] w-auto max-w-full"
         />
-        {filter.grain > 0 && (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 mix-blend-overlay"
-            style={{
-              backgroundImage: `url("${GRAIN_TEXTURE_URL}")`,
-              opacity: filter.grain,
-            }}
-          />
-        )}
-        {filter.vignette > 0 && (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
-            style={{ background: vignetteBackground(filter.vignette) }}
-          />
-        )}
-        {subtitle && imgWidth > 0 && (
+        {subtitle && viewWidth > 0 && (
           <p
             className="font-cinema pointer-events-none absolute inset-x-0 bottom-[4%] overflow-hidden text-center font-bold whitespace-nowrap text-white"
             style={{

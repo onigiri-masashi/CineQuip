@@ -1,103 +1,151 @@
+import {
+  buildMatrix,
+  type ColorMatrix,
+  type ColorOp,
+} from '@/lib/effects/colorMatrix'
+
 /**
  * 映画調フィルターの定義。
- * プレビューは CSS の filter / オーバーレイで、保存時は Canvas 2D で
- * 同じパラメータを適用することで見た目を一致させる。
+ * 色調はカラーマトリクス、質感（グレイン・ビネット）は canvas 合成で表現し、
+ * プレビューと保存の両方が同じレンダリングパイプラインを通る。
  */
 export interface CinemaFilter {
   id: string
   /** UI に表示する日本語名 */
   name: string
-  /** CSS / ctx.filter にそのまま渡すフィルター文字列。空文字は無加工 */
-  cssFilter: string
+  /** 色調操作（先頭から順に適用）。定義順は見た目に影響する */
+  ops: readonly ColorOp[]
+  /** ops から合成済みのカラーマトリクス */
+  matrix: ColorMatrix
   /** ビネット（四隅の暗がり）の強さ 0〜1 */
   vignette: number
   /** フィルムグレイン（粒状ノイズ）の不透明度 0〜1 */
   grain: number
 }
 
+interface FilterDef {
+  id: string
+  name: string
+  ops: readonly ColorOp[]
+  vignette: number
+  grain: number
+}
+
+function defineFilter(def: FilterDef): CinemaFilter {
+  return { ...def, matrix: buildMatrix(def.ops) }
+}
+
 export const FILTERS: CinemaFilter[] = [
-  {
+  defineFilter({
     id: 'normal',
     name: 'ノーマル',
-    cssFilter: '',
+    ops: [],
     vignette: 0,
     grain: 0,
-  },
-  {
+  }),
+  defineFilter({
     id: '8mm',
     name: '8mmフィルム',
-    cssFilter:
-      'sepia(0.45) contrast(1.15) brightness(0.95) saturate(0.85) hue-rotate(-8deg)',
+    ops: [
+      { type: 'sepia', value: 0.45 },
+      { type: 'contrast', value: 1.15 },
+      { type: 'brightness', value: 0.95 },
+      { type: 'saturate', value: 0.85 },
+      { type: 'hueRotate', degrees: -8 },
+    ],
     vignette: 0.5,
     grain: 0.35,
-  },
-  {
+  }),
+  defineFilter({
     id: 'noir',
     name: 'ノワール',
-    cssFilter: 'grayscale(1) contrast(1.35) brightness(0.9)',
+    ops: [
+      { type: 'grayscale', value: 1 },
+      { type: 'contrast', value: 1.35 },
+      { type: 'brightness', value: 0.9 },
+    ],
     vignette: 0.55,
     grain: 0.2,
-  },
-  {
+  }),
+  defineFilter({
     id: 'sci-fi',
     name: 'SF',
-    cssFilter:
-      'sepia(0.3) hue-rotate(170deg) saturate(1.4) contrast(1.2) brightness(0.95)',
+    ops: [
+      { type: 'sepia', value: 0.3 },
+      { type: 'hueRotate', degrees: 170 },
+      { type: 'saturate', value: 1.4 },
+      { type: 'contrast', value: 1.2 },
+      { type: 'brightness', value: 0.95 },
+    ],
     vignette: 0.35,
     grain: 0.1,
-  },
-  {
+  }),
+  defineFilter({
     id: 'war',
     name: '戦争映画',
-    cssFilter:
-      'sepia(0.4) hue-rotate(45deg) saturate(0.6) contrast(1.15) brightness(0.9)',
+    ops: [
+      { type: 'sepia', value: 0.4 },
+      { type: 'hueRotate', degrees: 45 },
+      { type: 'saturate', value: 0.6 },
+      { type: 'contrast', value: 1.15 },
+      { type: 'brightness', value: 0.9 },
+    ],
     vignette: 0.45,
     grain: 0.3,
-  },
-  {
+  }),
+  defineFilter({
     id: 'mini-theater',
     name: 'ミニシアター',
-    cssFilter: 'sepia(0.18) brightness(1.06) contrast(0.88) saturate(0.85)',
+    ops: [
+      { type: 'sepia', value: 0.18 },
+      { type: 'brightness', value: 1.06 },
+      { type: 'contrast', value: 0.88 },
+      { type: 'saturate', value: 0.85 },
+    ],
     vignette: 0.15,
     grain: 0.12,
-  },
-  {
+  }),
+  defineFilter({
     id: 'western',
     name: 'ウェスタン',
-    cssFilter:
-      'sepia(0.5) saturate(1.3) contrast(1.1) hue-rotate(-12deg) brightness(1.02)',
+    ops: [
+      { type: 'sepia', value: 0.5 },
+      { type: 'saturate', value: 1.3 },
+      { type: 'contrast', value: 1.1 },
+      { type: 'hueRotate', degrees: -12 },
+      { type: 'brightness', value: 1.02 },
+    ],
     vignette: 0.4,
     grain: 0.25,
-  },
-  {
+  }),
+  defineFilter({
     id: 'horror',
     name: 'ホラー',
-    cssFilter:
-      'sepia(0.3) hue-rotate(65deg) saturate(0.75) brightness(0.8) contrast(1.25)',
+    ops: [
+      { type: 'sepia', value: 0.3 },
+      { type: 'hueRotate', degrees: 65 },
+      { type: 'saturate', value: 0.75 },
+      { type: 'brightness', value: 0.8 },
+      { type: 'contrast', value: 1.25 },
+    ],
     vignette: 0.7,
     grain: 0.3,
-  },
-  {
+  }),
+  defineFilter({
     id: 'technicolor',
     name: 'テクニカラー',
-    cssFilter: 'saturate(1.65) contrast(1.2) brightness(1.02)',
+    ops: [
+      { type: 'saturate', value: 1.65 },
+      { type: 'contrast', value: 1.2 },
+      { type: 'brightness', value: 1.02 },
+    ],
     vignette: 0.2,
     grain: 0.15,
-  },
+  }),
 ]
 
 export const DEFAULT_FILTER = FILTERS[0]
 
 export function getFilter(id: string): CinemaFilter {
   return FILTERS.find((f) => f.id === id) ?? DEFAULT_FILTER
-}
-
-/** フィルムグレイン用の SVG ノイズ（データ URI）。CSS 背景としてタイル表示する */
-export const GRAIN_TEXTURE_URL = `data:image/svg+xml,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.9 0"/></filter><rect width="128" height="128" filter="url(%23n)"/></svg>`,
-)}`
-
-/** ビネットの CSS 背景（強さに応じた放射状グラデーション） */
-export function vignetteBackground(strength: number): string {
-  return `radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,${strength}) 100%)`
 }
