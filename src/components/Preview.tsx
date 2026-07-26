@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { Dices, Download, LoaderCircle, X } from 'lucide-react'
+import { Dices, Download, LoaderCircle, Share2, X } from 'lucide-react'
 
 import { CanvasView } from '@/components/CanvasView'
 import { Button } from '@/components/ui/button'
 import { downloadBlob, exportFileName, renderToBlob } from '@/lib/export'
+import { shareToX } from '@/lib/share'
 import type { CinemaFilter } from '@/lib/filters'
 import type { LoadedImage } from '@/lib/image'
 
@@ -31,6 +32,9 @@ export function Preview({
   const [viewWidth, setViewWidth] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState(false)
+  const [isSharing, setIsSharing] = useState(false)
+  const [shareError, setShareError] = useState(false)
+  const [showIntentGuide, setShowIntentGuide] = useState(false)
 
   // 表示中のプレビュー幅に追従して字幕サイズを決める（1 行に収めるため）
   useEffect(() => {
@@ -53,6 +57,22 @@ export function Preview({
       setSaveError(true)
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleShare = async () => {
+    setIsSharing(true)
+    setShareError(false)
+    setShowIntentGuide(false)
+    try {
+      const blob = await renderToBlob(image, filter, subtitle)
+      const result = await shareToX(blob, exportFileName(image.fileName))
+      // フォールバック時は画像の添付操作をユーザーに促す
+      if (result === 'intent') setShowIntentGuide(true)
+    } catch {
+      setShareError(true)
+    } finally {
+      setIsSharing(false)
     }
   }
 
@@ -98,6 +118,19 @@ export function Preview({
             <X aria-hidden="true" />
             取消し
           </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => void handleShare()}
+            disabled={isSharing}
+          >
+            {isSharing ? (
+              <LoaderCircle className="animate-spin" aria-hidden="true" />
+            ) : (
+              <Share2 aria-hidden="true" />
+            )}
+            Xでシェア
+          </Button>
           <Button size="sm" onClick={() => void handleSave()} disabled={isSaving}>
             {isSaving ? (
               <LoaderCircle className="animate-spin" aria-hidden="true" />
@@ -111,6 +144,16 @@ export function Preview({
       {saveError && (
         <p role="alert" className="text-sm text-destructive">
           画像の保存に失敗しました。もう一度お試しください。
+        </p>
+      )}
+      {shareError && (
+        <p role="alert" className="text-sm text-destructive">
+          シェアに失敗しました。もう一度お試しください。
+        </p>
+      )}
+      {showIntentGuide && (
+        <p role="status" className="text-sm text-muted-foreground">
+          画像を保存し、Xの投稿画面を開きました。投稿に保存した画像を添付してください。
         </p>
       )}
     </motion.div>
