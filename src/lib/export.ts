@@ -72,7 +72,8 @@ async function drawSubtitle(
 ) {
   const { lines, fontSize: fitSize } = layoutSubtitle(w, subtitle)
   const fontSize = Math.round(fitSize)
-  const font = `700 ${fontSize}px "Zen Old Mincho", "Hiragino Mincho ProN", serif`
+  // しねきゃぷしょんは単一ウェイトのため通常ウェイトで描画する（プレビューと揃える）
+  const font = `${fontSize}px cinecaption, "Zen Old Mincho", "Hiragino Mincho ProN", serif`
   // Web フォントの読み込みを待ってから描画する（未読込だと代替フォントになる）
   try {
     await document.fonts.load(font, subtitle)

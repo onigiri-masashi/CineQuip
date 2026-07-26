@@ -114,7 +114,7 @@ export function Preview({
         />
         {subtitle && viewWidth > 0 && (
           <p
-            className="font-cinema pointer-events-none absolute inset-x-0 bottom-[4%] overflow-hidden text-center font-bold text-white"
+            className="font-cinema pointer-events-none absolute inset-x-0 bottom-[4%] overflow-hidden text-center text-white"
             style={{
               fontSize: subtitleFontSize,
               lineHeight: SUBTITLE_LINE_HEIGHT,
