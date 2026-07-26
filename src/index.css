@@ -128,7 +128,19 @@
     @apply font-sans;
     }
 }
-/* 映画字幕用フォント（Google Fonts: Zen Old Mincho） */
+/*
+ * 映画字幕用フォント「しねきゃぷしょん」（chiphead 作・商用利用可）。
+ * 配布条件によりフォントファイルの改造が禁止のため、TTF を無改変のまま配信する
+ * （WOFF2 変換・サブセット化は行わない）。ライセンスは public/fonts/cinecaption2.26.txt を参照。
+ */
+@font-face {
+  font-family: 'cinecaption';
+  src: url('/fonts/cinecaption226.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+/* 読み込み完了までのフォールバックは従来の明朝体（Google Fonts: Zen Old Mincho） */
 @utility font-cinema {
-  font-family: 'Zen Old Mincho', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  font-family:
+    'cinecaption', 'Zen Old Mincho', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
 }

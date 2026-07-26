@@ -31,6 +31,8 @@ npm run build    # 型チェック + プロダクションビルド
 
 字幕の候補は `src/data/subtitles.json` で管理します。配列に文字列を追加・削除するだけで反映されます。
 
+字幕の描画には映画字幕風フォント「[しねきゃぷしょん](https://fontfree.me/235)」（chiphead 作）を使用しています。おおむね JIS 第一水準までの収録のため、字幕を追加する際は難しい漢字（第二水準以降）を避けてください。含まれているかどうかは表示して確認できます。
+
 ## デプロイ
 
 Cloudflare Workers（Static Assets）に配信します。サーバー処理はないため無料枠の範囲で運用できます。
@@ -44,3 +46,5 @@ Cloudflare Workers（Static Assets）に配信します。サーバー処理は�
 ## ライセンス
 
 [MIT](./LICENSE)
+
+同梱フォント「しねきゃぷしょん」（`public/fonts/cinecaption226.ttf`）は chiphead 氏の著作物です（ひらがなデザイン: 雑念の塊 氏）。商用利用・再配布可、改変禁止。詳細は [public/fonts/cinecaption2.26.txt](./public/fonts/cinecaption2.26.txt) を参照してください。
