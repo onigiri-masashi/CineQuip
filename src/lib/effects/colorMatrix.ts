@@ -132,8 +132,15 @@ export function isIdentity(m: ColorMatrix): boolean {
   return m.every((v, i) => Math.abs(v - IDENTITY[i]) < 1e-9)
 }
 
-/** ImageData の各ピクセルへカラーマトリクスを適用する（破壊的） */
-export function applyMatrix(data: Uint8ClampedArray, matrix: ColorMatrix) {
+/**
+ * ImageData の各ピクセルへカラーマトリクスとトーン LUT を 1 パスで適用する（破壊的）。
+ * LUT はマトリクス適用後の値に対して引かれる。
+ */
+export function applyColor(
+  data: Uint8ClampedArray,
+  matrix: ColorMatrix,
+  lut?: Uint8Array | null,
+) {
   const m = matrix
   const r0 = m[0], r1 = m[1], r2 = m[2], r4 = m[4] * 255
   const g0 = m[5], g1 = m[6], g2 = m[7], g4 = m[9] * 255
@@ -145,5 +152,10 @@ export function applyMatrix(data: Uint8ClampedArray, matrix: ColorMatrix) {
     data[i] = r0 * r + r1 * g + r2 * b + r4
     data[i + 1] = g0 * r + g1 * g + g2 * b + g4
     data[i + 2] = b0 * r + b1 * g + b2 * b + b4
+    if (lut) {
+      data[i] = lut[data[i]]
+      data[i + 1] = lut[data[i + 1]]
+      data[i + 2] = lut[data[i + 2]]
+    }
   }
 }
