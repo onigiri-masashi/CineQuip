@@ -3,11 +3,21 @@ import {
   type ColorMatrix,
   type ColorOp,
 } from '@/lib/effects/colorMatrix'
+import type { GlitchParams } from '@/lib/effects/glitch'
+import type { TiltShiftParams } from '@/lib/effects/tiltShift'
+import type { ToneParams } from '@/lib/effects/tone'
+
+/** 加色（カラーレイヤーの合成）の定義 */
+export interface TintParams {
+  color: string
+  blend: GlobalCompositeOperation
+  opacity: number
+}
 
 /**
  * 映画調フィルターの定義。
- * 色調はカラーマトリクス、質感（グレイン・ビネット）は canvas 合成で表現し、
- * プレビューと保存の両方が同じレンダリングパイプラインを通る。
+ * 色調はカラーマトリクス+トーンLUT、質感（グレイン・ビネット・グリッチ等）は
+ * canvas 合成で表現し、プレビューと保存の両方が同じパイプラインを通る。
  */
 export interface CinemaFilter {
   id: string
@@ -21,9 +31,17 @@ export interface CinemaFilter {
   vignette: number
   /** フィルムグレイン（粒状ノイズ）の不透明度 0〜1 */
   grain: number
+  /** 露光・ハイライト・ポスタライゼーション */
+  tone?: ToneParams
+  /** 加色レイヤー（配列順に合成） */
+  tints?: readonly TintParams[]
+  /** グリッチ加工 */
+  glitch?: GlitchParams
+  /** チルトシフト（ミニチュア風） */
+  tiltShift?: TiltShiftParams
 }
 
-interface FilterDef {
+interface FilterDef extends Omit<CinemaFilter, 'matrix'> {
   id: string
   name: string
   ops: readonly ColorOp[]
@@ -141,6 +159,82 @@ export const FILTERS: CinemaFilter[] = [
     ],
     vignette: 0.2,
     grain: 0.15,
+  }),
+  defineFilter({
+    id: 'vhs',
+    name: 'VHS',
+    ops: [
+      { type: 'saturate', value: 0.85 },
+      { type: 'contrast', value: 1.08 },
+      { type: 'brightness', value: 1.02 },
+    ],
+    glitch: { shift: 0.004, slices: 4, scanline: 0.14, seed: 11 },
+    vignette: 0.3,
+    grain: 0.2,
+  }),
+  defineFilter({
+    id: 'cyberpunk',
+    name: 'サイバーパンク',
+    ops: [
+      { type: 'saturate', value: 1.45 },
+      { type: 'contrast', value: 1.3 },
+      { type: 'hueRotate', degrees: -12 },
+      { type: 'brightness', value: 0.95 },
+    ],
+    tints: [
+      { color: '#00d4ff', blend: 'overlay', opacity: 0.2 },
+      { color: '#ff2bd6', blend: 'soft-light', opacity: 0.18 },
+    ],
+    glitch: { shift: 0.0025, slices: 2, scanline: 0.06, seed: 23 },
+    vignette: 0.45,
+    grain: 0.1,
+  }),
+  defineFilter({
+    id: 'retro-poster',
+    name: 'レトロポスター',
+    ops: [
+      { type: 'saturate', value: 1.5 },
+      { type: 'contrast', value: 1.2 },
+      { type: 'brightness', value: 1.03 },
+    ],
+    tone: { posterize: 5 },
+    vignette: 0.12,
+    grain: 0.08,
+  }),
+  defineFilter({
+    id: 'miniature',
+    name: 'ミニチュア',
+    ops: [
+      { type: 'saturate', value: 1.5 },
+      { type: 'contrast', value: 1.12 },
+      { type: 'brightness', value: 1.04 },
+    ],
+    tiltShift: { center: 0.55, range: 0.16, feather: 0.22, blur: 0.012 },
+    vignette: 0.12,
+    grain: 0,
+  }),
+  defineFilter({
+    id: 'bleach-bypass',
+    name: '銀残し',
+    ops: [
+      { type: 'saturate', value: 0.4 },
+      { type: 'contrast', value: 1.35 },
+    ],
+    tone: { highlights: 0.25 },
+    vignette: 0.4,
+    grain: 0.18,
+  }),
+  defineFilter({
+    id: 'daydream',
+    name: '白昼夢',
+    ops: [
+      { type: 'saturate', value: 1.15 },
+      { type: 'contrast', value: 0.92 },
+    ],
+    tone: { exposure: 0.55, highlights: 0.2 },
+    tints: [{ color: '#ffd9a0', blend: 'soft-light', opacity: 0.3 }],
+    vignette: 0,
+    grain: 0.06,
   }),
 ]
 

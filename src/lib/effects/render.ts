@@ -1,11 +1,16 @@
-import { applyMatrix, isIdentity } from '@/lib/effects/colorMatrix'
+import { applyColor, isIdentity } from '@/lib/effects/colorMatrix'
+import { applyGlitch } from '@/lib/effects/glitch'
+import { applyTiltShift } from '@/lib/effects/tiltShift'
+import { buildToneLUT } from '@/lib/effects/tone'
 import type { CinemaFilter } from '@/lib/filters'
 
 /** グレインの粒サイズの基準幅（この幅で等倍タイル） */
 const GRAIN_BASE_WIDTH = 1280
 
 /**
- * 画像にフィルター（色調・グレイン・ビネット）を適用して canvas に描画する。
+ * 画像にフィルターを適用して canvas に描画する。
+ * 適用順: 色調（マトリクス+トーンLUT）→ 加色 → チルトシフト → グリッチ
+ * → グレイン → ビネット。
  * プレビューと書き出しの両方がこの 1 本を通ることで見た目を完全に一致させる。
  *
  * @param maxDim 出力の長辺上限。指定すると縮小描画（プレビュー用）
@@ -29,12 +34,24 @@ export function renderScene(
 
   ctx.drawImage(source, 0, 0, w, h)
 
-  if (!isIdentity(filter.matrix)) {
+  const lut = buildToneLUT(filter.tone)
+  if (!isIdentity(filter.matrix) || lut) {
     const imageData = ctx.getImageData(0, 0, w, h)
-    applyMatrix(imageData.data, filter.matrix)
+    applyColor(imageData.data, filter.matrix, lut)
     ctx.putImageData(imageData, 0, 0)
   }
 
+  for (const tint of filter.tints ?? []) {
+    ctx.save()
+    ctx.globalCompositeOperation = tint.blend
+    ctx.globalAlpha = tint.opacity
+    ctx.fillStyle = tint.color
+    ctx.fillRect(0, 0, w, h)
+    ctx.restore()
+  }
+
+  if (filter.tiltShift) applyTiltShift(ctx, w, h, filter.tiltShift)
+  if (filter.glitch) applyGlitch(ctx, w, h, filter.glitch)
   if (filter.grain > 0) drawGrain(ctx, w, h, filter.grain)
   if (filter.vignette > 0) drawVignette(ctx, w, h, filter.vignette)
 }
