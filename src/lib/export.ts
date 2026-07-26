@@ -2,8 +2,9 @@ import { renderSceneAsync } from '@/lib/effects/render'
 import type { CinemaFilter } from '@/lib/filters'
 import type { LoadedImage } from '@/lib/image'
 import {
-  fitSubtitleFontSize,
+  layoutSubtitle,
   SUBTITLE_LETTER_SPACING_EM,
+  SUBTITLE_LINE_HEIGHT,
   SUBTITLE_MAX_WIDTH_RATIO,
 } from '@/lib/subtitle-layout'
 
@@ -69,7 +70,8 @@ async function drawSubtitle(
   h: number,
   subtitle: string,
 ) {
-  const fontSize = Math.round(fitSubtitleFontSize(w, subtitle))
+  const { lines, fontSize: fitSize } = layoutSubtitle(w, subtitle)
+  const fontSize = Math.round(fitSize)
   const font = `700 ${fontSize}px "Zen Old Mincho", "Hiragino Mincho ProN", serif`
   // Web フォントの読み込みを待ってから描画する（未読込だと代替フォントになる）
   try {
@@ -90,11 +92,15 @@ async function drawSubtitle(
   ctx.shadowOffsetY = fontSize * 0.03
   ctx.fillStyle = '#ffffff'
   // フォントサイズ計算は見積もりのため、想定外のはみ出しは maxWidth で保険をかける
-  ctx.fillText(
-    subtitle,
-    w / 2,
-    h - h * SUBTITLE_BOTTOM_RATIO,
-    w * SUBTITLE_MAX_WIDTH_RATIO,
-  )
+  const lineHeight = fontSize * SUBTITLE_LINE_HEIGHT
+  const bottom = h - h * SUBTITLE_BOTTOM_RATIO
+  lines.forEach((line, i) => {
+    ctx.fillText(
+      line,
+      w / 2,
+      bottom - (lines.length - 1 - i) * lineHeight,
+      w * SUBTITLE_MAX_WIDTH_RATIO,
+    )
+  })
   ctx.restore()
 }
